@@ -482,6 +482,21 @@
                 cursor: pointer;
                 user-select: none;
             }
+            .path-io-row {
+                display: flex;
+                gap: 8px;
+                margin-top: 10px;
+                width: 100%;
+            }
+            .path-io-btn {
+                flex: 1;
+                justify-content: center;
+                height: 32px;
+                font-size: 0.8rem;
+            }
+            .hidden-input {
+                display: none;
+            }
         </style>
     </head>
     <body>
@@ -578,6 +593,14 @@
                     </div>
                     <input type="range" id="control-rot-z" class="slider" min="0" max="360" step="1" value="0">
                 </div>
+
+                <div class="control-group">
+                    <div class="control-row">
+                        <span>Camera Zoom (FOV)</span>
+                        <span id="zoom-val">45°</span>
+                    </div>
+                    <input type="range" id="control-zoom" class="slider" min="10" max="110" step="1" value="45">
+                </div>
             </div>
         </div>
 
@@ -599,6 +622,12 @@
                 <input type="checkbox" id="path-with-record" class="record-checkbox">
                 <label for="path-with-record" class="record-checkbox-label">Record Path Playback</label>
             </div>
+
+            <div class="path-io-row">
+                <button type="button" id="export-shots-btn" class="shot-btn warp path-io-btn">Export JSON</button>
+                <button type="button" id="import-shots-btn" class="shot-btn path-io-btn" onclick="document.getElementById('import-json-input').click()">Import JSON</button>
+            </div>
+            <input type="file" id="import-json-input" class="hidden-input" accept=".json">
 
             <div class="divider"></div>
 

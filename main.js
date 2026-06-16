@@ -34,6 +34,15 @@ let warpEndPitch = 0;
 let warpStartYaw = 0;
 let warpEndYaw = 0;
 let warpCallback = null;
+let warpModelEntity = null;
+const warpStartModelPos = new pc.Vec3();
+const warpEndModelPos = new pc.Vec3();
+const warpStartModelRot = new pc.Vec3();
+const warpEndModelRot = new pc.Vec3();
+let warpStartModelScale = 1;
+let warpEndModelScale = 1;
+let warpStartFov = 45;
+let warpEndFov = 45;
 
 // Camera Path Playback State
 let isPlayingPath = false;
@@ -231,6 +240,45 @@ app.on('update', (dt) => {
         cameraPitch = pc.math.lerp(warpStartPitch, warpEndPitch, ease);
         cameraYaw = pc.math.lerp(warpStartYaw, warpEndYaw, ease);
         updateCameraRotation();
+
+        const currentFov = pc.math.lerp(warpStartFov, warpEndFov, ease);
+        updateZoomHUD(currentFov);
+
+        if (warpModelEntity) {
+            const currentModelPos = new pc.Vec3();
+            currentModelPos.lerp(warpStartModelPos, warpEndModelPos, ease);
+            warpModelEntity.setPosition(currentModelPos);
+
+            const rx = pc.math.lerp(warpStartModelRot.x, warpEndModelRot.x, ease);
+            const ry = pc.math.lerp(warpStartModelRot.y, warpEndModelRot.y, ease);
+            const rz = pc.math.lerp(warpStartModelRot.z, warpEndModelRot.z, ease);
+            warpModelEntity.setEulerAngles(rx, ry, rz);
+
+            const currentScale = pc.math.lerp(warpStartModelScale, warpEndModelScale, ease);
+            warpModelEntity.setLocalScale(currentScale, currentScale, currentScale);
+
+            // Update UI sliders/labels if this model is selected
+            if (activeModelId) {
+                const activeModel = loadedModels.find(m => m.id === activeModelId);
+                if (activeModel && activeModel.entity === warpModelEntity) {
+                    controlPosX.value = currentModelPos.x;
+                    controlPosY.value = currentModelPos.y;
+                    controlPosZ.value = currentModelPos.z;
+                    controlScale.value = currentScale;
+                    controlRotX.value = rx;
+                    controlRotY.value = ry;
+                    controlRotZ.value = rz;
+
+                    posXVal.textContent = currentModelPos.x.toFixed(1);
+                    posYVal.textContent = currentModelPos.y.toFixed(1);
+                    posZVal.textContent = currentModelPos.z.toFixed(1);
+                    scaleVal.textContent = currentScale.toFixed(2);
+                    rotXVal.textContent = Math.round(rx) + '°';
+                    rotYVal.textContent = Math.round(ry) + '°';
+                    rotZVal.textContent = Math.round(rz) + '°';
+                }
+            }
+        }
         
         return;
     }
@@ -249,6 +297,34 @@ app.on('update', (dt) => {
                 cameraPitch = nextShot.pitch;
                 cameraYaw = nextShot.yaw;
                 updateCameraRotation();
+
+                if (nextShot.modelTransform) {
+                    const model = loadedModels.find(m => m.file.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
+                    if (model) {
+                        selectModel(model.id, true);
+                        model.entity.setPosition(nextShot.modelTransform.position.x, nextShot.modelTransform.position.y, nextShot.modelTransform.position.z);
+                        model.entity.setEulerAngles(nextShot.modelTransform.rotation.x, nextShot.modelTransform.rotation.y, nextShot.modelTransform.rotation.z);
+                        model.entity.setLocalScale(nextShot.modelTransform.scale, nextShot.modelTransform.scale, nextShot.modelTransform.scale);
+
+                        if (activeModelId === model.id) {
+                            controlPosX.value = nextShot.modelTransform.position.x;
+                            controlPosY.value = nextShot.modelTransform.position.y;
+                            controlPosZ.value = nextShot.modelTransform.position.z;
+                            controlScale.value = nextShot.modelTransform.scale;
+                            controlRotX.value = nextShot.modelTransform.rotation.x;
+                            controlRotY.value = nextShot.modelTransform.rotation.y;
+                            controlRotZ.value = nextShot.modelTransform.rotation.z;
+
+                            posXVal.textContent = nextShot.modelTransform.position.x.toFixed(1);
+                            posYVal.textContent = nextShot.modelTransform.position.y.toFixed(1);
+                            posZVal.textContent = nextShot.modelTransform.position.z.toFixed(1);
+                            scaleVal.textContent = nextShot.modelTransform.scale.toFixed(2);
+                            rotXVal.textContent = Math.round(nextShot.modelTransform.rotation.x) + '°';
+                            rotYVal.textContent = Math.round(nextShot.modelTransform.rotation.y) + '°';
+                            rotZVal.textContent = Math.round(nextShot.modelTransform.rotation.z) + '°';
+                        }
+                    }
+                }
 
                 // Arrived at nextShot. Check if we should wait at nextShot
                 const nextWait = nextShot.stopDuration ?? 0;
@@ -299,6 +375,65 @@ app.on('update', (dt) => {
             cameraPitch = pc.math.lerp(currentShot.pitch, nextShot.pitch, ease);
             cameraYaw = pc.math.lerp(currentShot.yaw, targetYaw, ease);
             updateCameraRotation();
+
+            // Smoothly interpolate model transform if defined on both shots
+            if (currentShot.modelTransform && nextShot.modelTransform) {
+                const model = loadedModels.find(m => m.file.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
+                if (model) {
+                    selectModel(model.id, true);
+
+                    const p1 = new pc.Vec3(currentShot.modelTransform.position.x, currentShot.modelTransform.position.y, currentShot.modelTransform.position.z);
+                    const p2 = new pc.Vec3(nextShot.modelTransform.position.x, nextShot.modelTransform.position.y, nextShot.modelTransform.position.z);
+
+                    const currentModelPos = new pc.Vec3();
+                    currentModelPos.lerp(p1, p2, ease);
+                    model.entity.setPosition(currentModelPos);
+
+                    const r1 = currentShot.modelTransform.rotation;
+                    const r2 = nextShot.modelTransform.rotation;
+
+                    let rxDiff = r2.x - r1.x;
+                    while (rxDiff < -180) rxDiff += 360;
+                    while (rxDiff > 180) rxDiff -= 360;
+                    const targetRx = r1.x + rxDiff;
+
+                    let ryDiff = r2.y - r1.y;
+                    while (ryDiff < -180) ryDiff += 360;
+                    while (ryDiff > 180) ryDiff -= 360;
+                    const targetRy = r1.y + ryDiff;
+
+                    let rzDiff = r2.z - r1.z;
+                    while (rzDiff < -180) rzDiff += 360;
+                    while (rzDiff > 180) rzDiff -= 360;
+                    const targetRz = r1.z + rzDiff;
+
+                    const rx = pc.math.lerp(r1.x, targetRx, ease);
+                    const ry = pc.math.lerp(r1.y, targetRy, ease);
+                    const rz = pc.math.lerp(r1.z, targetRz, ease);
+                    model.entity.setEulerAngles(rx, ry, rz);
+
+                    const currentScale = pc.math.lerp(currentShot.modelTransform.scale, nextShot.modelTransform.scale, ease);
+                    model.entity.setLocalScale(currentScale, currentScale, currentScale);
+
+                    if (activeModelId === model.id) {
+                        controlPosX.value = currentModelPos.x;
+                        controlPosY.value = currentModelPos.y;
+                        controlPosZ.value = currentModelPos.z;
+                        controlScale.value = currentScale;
+                        controlRotX.value = rx;
+                        controlRotY.value = ry;
+                        controlRotZ.value = rz;
+
+                        posXVal.textContent = currentModelPos.x.toFixed(1);
+                        posYVal.textContent = currentModelPos.y.toFixed(1);
+                        posZVal.textContent = currentModelPos.z.toFixed(1);
+                        scaleVal.textContent = currentScale.toFixed(2);
+                        rotXVal.textContent = Math.round(rx) + '°';
+                        rotYVal.textContent = Math.round(ry) + '°';
+                        rotZVal.textContent = Math.round(rz) + '°';
+                    }
+                }
+            }
         } else if (pathState === 'stopped') {
             pathWaitTimer += dt;
             if (pathWaitTimer >= currentWaitDuration) {
@@ -363,6 +498,7 @@ const controlScale = document.getElementById('control-scale');
 const controlRotX = document.getElementById('control-rot-x');
 const controlRotY = document.getElementById('control-rot-y');
 const controlRotZ = document.getElementById('control-rot-z');
+const controlZoom = document.getElementById('control-zoom');
 
 // Value Labels
 const posXVal = document.getElementById('pos-x-val');
@@ -372,6 +508,23 @@ const scaleVal = document.getElementById('scale-val');
 const rotXVal = document.getElementById('rot-x-val');
 const rotYVal = document.getElementById('rot-y-val');
 const rotZVal = document.getElementById('rot-z-val');
+const zoomVal = document.getElementById('zoom-val');
+
+if (controlZoom) {
+    controlZoom.addEventListener('input', () => {
+        const fov = parseFloat(controlZoom.value);
+        camera.camera.fov = fov;
+        zoomVal.textContent = `${Math.round(fov)}°`;
+    });
+}
+
+function updateZoomHUD(fov) {
+    if (controlZoom && zoomVal) {
+        controlZoom.value = fov;
+        zoomVal.textContent = `${Math.round(fov)}°`;
+    }
+    camera.camera.fov = fov;
+}
 
 // Background Color Picker Change
 bgColorPicker.addEventListener('input', (e) => {
@@ -537,7 +690,7 @@ function updateModelUIItem(model) {
     });
 }
 
-function selectModel(modelId) {
+function selectModel(modelId, suppressCameraLookAt = false) {
     activeModelId = modelId;
     
     // Highlight active item in UI list
@@ -579,11 +732,13 @@ function selectModel(modelId) {
         rotYVal.textContent = Math.round(rot.y) + '°';
         rotZVal.textContent = Math.round(rot.z) + '°';
 
-        // Rotate camera to face the selected model
-        camera.lookAt(pos);
-        const euler = camera.getEulerAngles();
-        cameraYaw = euler.y;
-        cameraPitch = euler.x;
+        if (!suppressCameraLookAt) {
+            // Rotate camera to face the selected model
+            camera.lookAt(pos);
+            const euler = camera.getEulerAngles();
+            cameraYaw = euler.y;
+            cameraPitch = euler.x;
+        }
     }
 }
 
@@ -787,7 +942,8 @@ try {
             position: new pc.Vec3(s.position.x, s.position.y, s.position.z),
             pitch: s.pitch,
             yaw: s.yaw,
-            stopDuration: s.stopDuration ?? 0
+            stopDuration: s.stopDuration ?? 0,
+            modelTransform: s.modelTransform ?? null
         }));
     }
 } catch (e) {
@@ -803,7 +959,8 @@ function saveShotsToStorage() {
             position: { x: s.position.x, y: s.position.y, z: s.position.z },
             pitch: s.pitch,
             yaw: s.yaw,
-            stopDuration: s.stopDuration ?? 0
+            stopDuration: s.stopDuration ?? 0,
+            modelTransform: s.modelTransform ?? null
         }));
         localStorage.setItem('splat_camera_shots', JSON.stringify(serialized));
     } catch (e) {
@@ -885,7 +1042,7 @@ function renderShotsList() {
         // Bind Button Actions
         const warpBtn = document.getElementById(`warp-shot-${shot.id}`);
         warpBtn.addEventListener('click', () => {
-            startWarpTo(shot.position, shot.pitch, shot.yaw);
+            startWarpTo(shot.position, shot.pitch, shot.yaw, shot.modelTransform);
         });
 
         const stopInput = document.getElementById(`shot-stop-${shot.id}`);
@@ -911,6 +1068,16 @@ function renderShotsList() {
             shot.position.copy(camera.getPosition());
             shot.pitch = cameraPitch;
             shot.yaw = cameraYaw;
+
+            const activeModel = loadedModels.find(m => m.id === activeModelId);
+            shot.modelTransform = activeModel ? {
+                id: activeModelId,
+                name: activeModel.file.name,
+                position: { x: activeModel.entity.getPosition().x, y: activeModel.entity.getPosition().y, z: activeModel.entity.getPosition().z },
+                rotation: { x: activeModel.entity.getEulerAngles().x, y: activeModel.entity.getEulerAngles().y, z: activeModel.entity.getEulerAngles().z },
+                scale: activeModel.entity.getLocalScale().x
+            } : null;
+
             saveShotsToStorage();
             renderShotsList();
         });
@@ -932,13 +1099,23 @@ captureShotBtn.addEventListener('click', () => {
     const position = new pc.Vec3();
     position.copy(camera.getPosition());
 
+    const activeModel = loadedModels.find(m => m.id === activeModelId);
+    const modelTransform = activeModel ? {
+        id: activeModelId,
+        name: activeModel.file.name,
+        position: { x: activeModel.entity.getPosition().x, y: activeModel.entity.getPosition().y, z: activeModel.entity.getPosition().z },
+        rotation: { x: activeModel.entity.getEulerAngles().x, y: activeModel.entity.getEulerAngles().y, z: activeModel.entity.getEulerAngles().z },
+        scale: activeModel.entity.getLocalScale().x
+    } : null;
+
     const newShot = {
         id: nextId,
         name: `Shot ${nextId}`,
         position: position,
         pitch: cameraPitch,
         yaw: cameraYaw,
-        stopDuration: 0
+        stopDuration: 0,
+        modelTransform: modelTransform
     };
 
     cameraShots.push(newShot);
@@ -946,7 +1123,7 @@ captureShotBtn.addEventListener('click', () => {
     renderShotsList();
 });
 
-function startWarpTo(position, pitch, yaw) {
+function startWarpTo(position, pitch, yaw, targetModelTransform = null) {
     warpStartPos.copy(camera.getPosition());
     warpEndPos.copy(position);
     warpStartPitch = cameraPitch;
@@ -958,6 +1135,41 @@ function startWarpTo(position, pitch, yaw) {
     while (yawDiff < -180) yawDiff += 360;
     while (yawDiff > 180) yawDiff -= 360;
     warpEndYaw = cameraYaw + yawDiff;
+
+    // Model warp setup
+    warpModelEntity = null;
+    if (targetModelTransform) {
+        const model = loadedModels.find(m => m.file.name === targetModelTransform.name) || loadedModels.find(m => m.id === targetModelTransform.id);
+        if (model) {
+            // Activate model without resetting camera orientation
+            selectModel(model.id, true);
+
+            warpModelEntity = model.entity;
+            warpStartModelPos.copy(model.entity.getPosition());
+            warpEndModelPos.set(targetModelTransform.position.x, targetModelTransform.position.y, targetModelTransform.position.z);
+
+            const currentRot = model.entity.getEulerAngles();
+            warpStartModelRot.copy(currentRot);
+
+            // Shortest path interpolation for 3-axis rotation
+            let rxDiff = targetModelTransform.rotation.x - currentRot.x;
+            while (rxDiff < -180) rxDiff += 360;
+            while (rxDiff > 180) rxDiff -= 360;
+
+            let ryDiff = targetModelTransform.rotation.y - currentRot.y;
+            while (ryDiff < -180) ryDiff += 360;
+            while (ryDiff > 180) ryDiff -= 360;
+
+            let rzDiff = targetModelTransform.rotation.z - currentRot.z;
+            while (rzDiff < -180) rzDiff += 360;
+            while (rzDiff > 180) rzDiff -= 360;
+
+            warpEndModelRot.set(currentRot.x + rxDiff, currentRot.y + ryDiff, currentRot.z + rzDiff);
+
+            warpStartModelScale = model.entity.getLocalScale().x;
+            warpEndModelScale = targetModelTransform.scale;
+        }
+    }
 
     warpTimer = 0;
     isWarping = true;
@@ -990,7 +1202,7 @@ function startPathPlayback() {
     }
 
     // Transition smoothly to the first shot (Shot 0) from current view
-    startWarpTo(cameraShots[0].position, cameraShots[0].pitch, cameraShots[0].yaw);
+    startWarpTo(cameraShots[0].position, cameraShots[0].pitch, cameraShots[0].yaw, cameraShots[0].modelTransform);
     
     // Set warp complete callback to trigger path playback from Shot 0!
     warpCallback = () => {
@@ -1033,6 +1245,99 @@ function updatePlayPathButtonUI() {
         playPathBtn.classList.remove('playing');
         playPathBtnText.textContent = 'Play Camera Path';
     }
+}
+
+// --- Camera Shots JSON Import/Export Actions ---
+const exportShotsBtn = document.getElementById('export-shots-btn');
+const importJsonInput = document.getElementById('import-json-input');
+
+exportShotsBtn.addEventListener('click', () => {
+    exportShotsToJSON();
+});
+
+importJsonInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const data = JSON.parse(event.target.result);
+            if (!data || !Array.isArray(data.shots)) {
+                throw new Error('Invalid format: \'shots\' array missing.');
+            }
+
+            // Restore shots and reconstruct pc.Vec3 objects with full schema validation
+            cameraShots = data.shots.map((s) => {
+                if (!s.position || typeof s.position.x !== 'number' || typeof s.position.y !== 'number' || typeof s.position.z !== 'number') {
+                    throw new Error('Invalid shot position coordinates.');
+                }
+                return {
+                    id: s.id ?? Math.floor(Math.random() * 100000),
+                    name: s.name ?? 'Shot',
+                    position: new pc.Vec3(s.position.x, s.position.y, s.position.z),
+                    pitch: s.pitch ?? 0,
+                    yaw: s.yaw ?? 0,
+                    stopDuration: s.stopDuration ?? 0,
+                    modelTransform: s.modelTransform ?? null
+                };
+            });
+
+            saveShotsToStorage();
+            renderShotsList();
+
+            const importedModelName = data.modelName ?? 'Unknown Model';
+            alert(`Successfully imported ${cameraShots.length} shots configured for model "${importedModelName}"!`);
+        } catch (err) {
+            console.error('Failed to parse JSON file:', err);
+            alert(`Import failed: ${err.message}`);
+        }
+        // Clear input value so same file can be selected again
+        importJsonInput.value = '';
+    };
+    reader.readAsText(file);
+});
+
+function exportShotsToJSON() {
+    if (cameraShots.length === 0) {
+        alert('No shots to export! Create some shots first.');
+        return;
+    }
+
+    // Identify active model filename
+    const activeModel = loadedModels.find(m => m.id === activeModelId);
+    const modelName = activeModel ? activeModel.file.name : 'No Active Model';
+
+    const data = {
+        modelName: modelName,
+        shots: cameraShots.map(s => ({
+            id: s.id,
+            name: s.name,
+            position: { x: s.position.x, y: s.position.y, z: s.position.z },
+            pitch: s.pitch,
+            yaw: s.yaw,
+            stopDuration: s.stopDuration ?? 0,
+            modelTransform: s.modelTransform ?? null
+        }))
+    };
+
+    const jsonString = JSON.stringify(data, null, 4);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const safeModelName = modelName.replace(/\.[^/.]+$/, '').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${safeModelName}_camera_shots.json`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
 }
 
 // Initial render
