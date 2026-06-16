@@ -1,0 +1,464 @@
+{
+    "modelName": "Office_Data1.ply",
+    "shots": [
+        {
+            "id": 1,
+            "name": "Shot 1",
+            "position": {
+                "x": -7.890679836273193,
+                "y": -1.0898315906524658,
+                "z": 9.563495635986328
+            },
+            "pitch": -179.7492445611004,
+            "yaw": 386.54999999999774,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 2,
+            "name": "Shot 2",
+            "position": {
+                "x": -6.932709217071533,
+                "y": -1.0992114543914795,
+                "z": 11.480695724487305
+            },
+            "pitch": -179.7492445611004,
+            "yaw": 386.54999999999774,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 3,
+            "name": "Shot 3",
+            "position": {
+                "x": -8.18471908569336,
+                "y": -1.1716158390045166,
+                "z": 11.105785369873047
+            },
+            "pitch": -182.74924456110048,
+            "yaw": 449.8499999999971,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 4,
+            "name": "Shot 4",
+            "position": {
+                "x": -4.5834527015686035,
+                "y": -1.9149163961410522,
+                "z": 12.186627388000488
+            },
+            "pitch": -198.04924456110052,
+            "yaw": 562.4999999999961,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 5,
+            "name": "Shot 5",
+            "position": {
+                "x": -3.034667730331421,
+                "y": -2.2321860790252686,
+                "z": 8.618966102600098
+            },
+            "pitch": -214.99924456110057,
+            "yaw": 617.699999999996,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 6,
+            "name": "Shot 6",
+            "position": {
+                "x": -6.155184745788574,
+                "y": -2.023709297180176,
+                "z": 5.738887310028076
+            },
+            "pitch": -217.2492445611009,
+            "yaw": 681.2999999999943,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 7,
+            "name": "Shot 7",
+            "position": {
+                "x": -7.914418697357178,
+                "y": -2.43230938911438,
+                "z": 5.149195671081543
+            },
+            "pitch": -237.34924456110124,
+            "yaw": 782.399999999994,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 8,
+            "name": "Shot 8",
+            "position": {
+                "x": -7.720034599304199,
+                "y": -1.487837314605713,
+                "z": 3.527975082397461
+            },
+            "pitch": -211.69924456110107,
+            "yaw": 828.1499999999936,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 9,
+            "name": "Shot 9",
+            "position": {
+                "x": -7.8983612060546875,
+                "y": -1.1936070919036865,
+                "z": 2.5153732299804688
+            },
+            "pitch": -187.699244561101,
+            "yaw": 861.1499999999935,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 10,
+            "name": "Shot 10",
+            "position": {
+                "x": -7.767453670501709,
+                "y": -1.0855920314788818,
+                "z": 1.437918782234192
+            },
+            "pitch": -186.799244561101,
+            "yaw": 846.1499999999935,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 11,
+            "name": "Shot 11",
+            "position": {
+                "x": -6.94543981552124,
+                "y": -0.8929153084754944,
+                "z": -1.3636910915374756
+            },
+            "pitch": -184.699244561101,
+            "yaw": 807.1499999999934,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 12,
+            "name": "Shot 12",
+            "position": {
+                "x": -6.063223361968994,
+                "y": -1.1274925470352173,
+                "z": -2.323739528656006
+            },
+            "pitch": -177.9492445611009,
+            "yaw": 790.1999999999929,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 13,
+            "name": "Shot 13",
+            "position": {
+                "x": -4.9174323081970215,
+                "y": -1.0899196863174438,
+                "z": -3.25087308883667
+            },
+            "pitch": -189.49924456110097,
+            "yaw": 774.5999999999933,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 14,
+            "name": "Shot 14",
+            "position": {
+                "x": -3.1236114501953125,
+                "y": -0.8397499322891235,
+                "z": -3.275386095046997
+            },
+            "pitch": -187.54924456110086,
+            "yaw": 754.1999999999937,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 15,
+            "name": "Shot 15",
+            "position": {
+                "x": -1.834776520729065,
+                "y": -0.6294993758201599,
+                "z": -1.881580114364624
+            },
+            "pitch": -178.9992445611007,
+            "yaw": 768.7499999999933,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 16,
+            "name": "Shot 16",
+            "position": {
+                "x": -0.7238785624504089,
+                "y": -0.6535143256187439,
+                "z": -1.0824567079544067
+            },
+            "pitch": -182.59924456110085,
+            "yaw": 773.8499999999937,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        },
+        {
+            "id": 17,
+            "name": "Shot 17",
+            "position": {
+                "x": -2.6888649463653564,
+                "y": -0.7639864683151245,
+                "z": -2.517977714538574
+            },
+            "pitch": -182.59924456110085,
+            "yaw": 773.8499999999937,
+            "stopDuration": 0,
+            "modelTransform": {
+                "id": "model-gxichox",
+                "name": "Office_Data1.ply",
+                "position": {
+                    "x": 0,
+                    "y": 0,
+                    "z": 0
+                },
+                "rotation": {
+                    "x": -90.00000000000001,
+                    "y": 24.99999971118543,
+                    "z": -180
+                },
+                "scale": 1
+            }
+        }
+    ]
+}
