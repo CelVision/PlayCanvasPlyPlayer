@@ -495,6 +495,8 @@ app.on('update', (dt) => {
             camera.translateLocal(0, moveUp * speed, 0);
         }
     }
+
+    updateCameraStats();
 });
 
 // --- Model Management & State ---
@@ -507,6 +509,9 @@ const modelsContainer = document.getElementById('models-container');
 const activeControls = document.getElementById('active-controls');
 const activeModelNameLabel = document.getElementById('active-model-name');
 const statsCountLabel = document.getElementById('stats-count');
+const cameraPosStat = document.getElementById('camera-pos-stat');
+const cameraRotStat = document.getElementById('camera-rot-stat');
+const cameraZoomStat = document.getElementById('camera-zoom-stat');
 const bgColorPicker = document.getElementById('bg-color');
 
 // Control sliders
@@ -836,6 +841,19 @@ function updateStats() {
     statsCountLabel.textContent = `${activeCount} / ${loadedModels.length}`;
 }
 
+function updateCameraStats() {
+    if (cameraPosStat) {
+        const pos = camera.getPosition();
+        cameraPosStat.textContent = `X: ${pos.x.toFixed(2)}, Y: ${pos.y.toFixed(2)}, Z: ${pos.z.toFixed(2)}`;
+    }
+    if (cameraRotStat) {
+        cameraRotStat.textContent = `Pitch: ${Math.round(cameraPitch)}°, Yaw: ${Math.round(cameraYaw)}°`;
+    }
+    if (cameraZoomStat) {
+        cameraZoomStat.textContent = `${Math.round(camera.camera.fov)}°`;
+    }
+}
+
 // --- Transform Sliders Inputs ---
 function updateActiveModelTransform() {
     if (!activeModelId) return;
@@ -863,12 +881,6 @@ function updateActiveModelTransform() {
     inputRotX.value = Math.round(rx);
     inputRotY.value = Math.round(ry);
     inputRotZ.value = Math.round(rz);
-
-    // Rotate camera to face the selected model as we move it
-    camera.lookAt(new pc.Vec3(px, py, pz));
-    const euler = camera.getEulerAngles();
-    cameraYaw = euler.y;
-    cameraPitch = euler.x;
 }
 
 // Bind numeric input events for model transform (bidirectional entry)
@@ -899,12 +911,6 @@ function handleModelTransformInput() {
     model.entity.setPosition(px, py, pz);
     model.entity.setLocalScale(s, s, s);
     model.entity.setEulerAngles(rx, ry, rz);
-
-    // Rotate camera to face selected model as we type
-    camera.lookAt(new pc.Vec3(px, py, pz));
-    const euler = camera.getEulerAngles();
-    cameraYaw = euler.y;
-    cameraPitch = euler.x;
 }
 
 // Attach slider listeners
