@@ -164,6 +164,28 @@
                 outline: none;
                 margin: 4px 0;
             }
+            .num-input {
+                background: rgba(0, 0, 0, 0.25);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: #ffffff;
+                font-family: inherit;
+                font-size: 0.8rem;
+                padding: 2px 4px;
+                border-radius: 4px;
+                width: 54px;
+                text-align: right;
+                outline: none;
+                transition: border-color 0.15s ease;
+            }
+            .num-input:focus {
+                border-color: #3b82f6;
+                background: rgba(0, 0, 0, 0.4);
+            }
+            .num-input::-webkit-outer-spin-button,
+            .num-input::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
             .slider::-webkit-slider-thumb {
                 -webkit-appearance: none;
                 appearance: none;
@@ -541,7 +563,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Position X</span>
-                        <span id="pos-x-val">0.0</span>
+                        <input type="number" id="input-pos-x" class="num-input" step="0.1" value="0.0">
                     </div>
                     <input type="range" id="control-pos-x" class="slider" min="-10" max="10" step="0.1" value="0">
                 </div>
@@ -549,7 +571,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Position Y</span>
-                        <span id="pos-y-val">0.0</span>
+                        <input type="number" id="input-pos-y" class="num-input" step="0.1" value="0.0">
                     </div>
                     <input type="range" id="control-pos-y" class="slider" min="-10" max="10" step="0.1" value="0">
                 </div>
@@ -557,7 +579,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Position Z</span>
-                        <span id="pos-z-val">0.0</span>
+                        <input type="number" id="input-pos-z" class="num-input" step="0.1" value="0.0">
                     </div>
                     <input type="range" id="control-pos-z" class="slider" min="-10" max="10" step="0.1" value="0">
                 </div>
@@ -565,7 +587,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Scale</span>
-                        <span id="scale-val">1.0</span>
+                        <input type="number" id="input-scale" class="num-input" step="0.05" min="0.1" max="5" value="1.0">
                     </div>
                     <input type="range" id="control-scale" class="slider" min="0.1" max="5" step="0.05" value="1">
                 </div>
@@ -573,7 +595,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Rotation X</span>
-                        <span id="rot-x-val">0°</span>
+                        <input type="number" id="input-rot-x" class="num-input" step="1" min="0" max="360" value="0">
                     </div>
                     <input type="range" id="control-rot-x" class="slider" min="0" max="360" step="1" value="0">
                 </div>
@@ -581,7 +603,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Rotation Y</span>
-                        <span id="rot-y-val">0°</span>
+                        <input type="number" id="input-rot-y" class="num-input" step="1" min="0" max="360" value="0">
                     </div>
                     <input type="range" id="control-rot-y" class="slider" min="0" max="360" step="1" value="0">
                 </div>
@@ -589,7 +611,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Rotation Z</span>
-                        <span id="rot-z-val">0°</span>
+                        <input type="number" id="input-rot-z" class="num-input" step="1" min="0" max="360" value="0">
                     </div>
                     <input type="range" id="control-rot-z" class="slider" min="0" max="360" step="1" value="0">
                 </div>
@@ -597,7 +619,7 @@
                 <div class="control-group">
                     <div class="control-row">
                         <span>Camera Zoom (FOV)</span>
-                        <span id="zoom-val">45°</span>
+                        <input type="number" id="input-zoom" class="num-input" step="1" min="10" max="110" value="45">
                     </div>
                     <input type="range" id="control-zoom" class="slider" min="10" max="110" step="1" value="45">
                 </div>

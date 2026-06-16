@@ -101,7 +101,7 @@ window.addEventListener('mousemove', (e) => {
         const deltaY = e.clientY - lastMouseY;
 
         if (dragMode === 'look') {
-            cameraYaw -= deltaX * 0.15;
+            cameraYaw += deltaX * 0.15;
             cameraPitch -= deltaY * 0.15;
             updateCameraRotation();
         } else if (dragMode === 'pan') {
@@ -162,7 +162,7 @@ canvas.addEventListener('touchmove', (e) => {
             const deltaX = e.touches[0].clientX - lastMouseX;
             const deltaY = e.touches[0].clientY - lastMouseY;
 
-            cameraYaw -= deltaX * 0.15;
+            cameraYaw += deltaX * 0.15;
             cameraPitch -= deltaY * 0.15;
             updateCameraRotation();
 
@@ -210,10 +210,24 @@ canvas.addEventListener('touchend', () => {
 const activeKeys = {};
 window.addEventListener('keydown', (e) => {
     cancelCameraAutomation();
-    activeKeys[e.key.toLowerCase()] = true;
+    
+    // Guard against non-string keys
+    if (typeof e.key === 'string') {
+        activeKeys[e.key.toLowerCase()] = true;
+
+        if (e.key === '+' || e.key === '=') {
+            const fov = Math.max(10, camera.camera.fov - 1);
+            updateZoomHUD(fov);
+        } else if (e.key === '-' || e.key === '_') {
+            const fov = Math.min(110, camera.camera.fov + 1);
+            updateZoomHUD(fov);
+        }
+    }
 });
 window.addEventListener('keyup', (e) => {
-    activeKeys[e.key.toLowerCase()] = false;
+    if (typeof e.key === 'string') {
+        activeKeys[e.key.toLowerCase()] = false;
+    }
 });
 
 // Register frame update loop to handle smooth WASD keyboard movement
@@ -269,13 +283,13 @@ app.on('update', (dt) => {
                     controlRotY.value = ry;
                     controlRotZ.value = rz;
 
-                    posXVal.textContent = currentModelPos.x.toFixed(1);
-                    posYVal.textContent = currentModelPos.y.toFixed(1);
-                    posZVal.textContent = currentModelPos.z.toFixed(1);
-                    scaleVal.textContent = currentScale.toFixed(2);
-                    rotXVal.textContent = Math.round(rx) + '°';
-                    rotYVal.textContent = Math.round(ry) + '°';
-                    rotZVal.textContent = Math.round(rz) + '°';
+                    inputPosX.value = currentModelPos.x.toFixed(1);
+                    inputPosY.value = currentModelPos.y.toFixed(1);
+                    inputPosZ.value = currentModelPos.z.toFixed(1);
+                    inputScale.value = currentScale.toFixed(2);
+                    inputRotX.value = Math.round(rx);
+                    inputRotY.value = Math.round(ry);
+                    inputRotZ.value = Math.round(rz);
                 }
             }
         }
@@ -297,9 +311,10 @@ app.on('update', (dt) => {
                 cameraPitch = nextShot.pitch;
                 cameraYaw = nextShot.yaw;
                 updateCameraRotation();
+                updateZoomHUD(nextShot.fov ?? 45);
 
                 if (nextShot.modelTransform) {
-                    const model = loadedModels.find(m => m.file.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
+                    const model = loadedModels.find(m => m.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
                     if (model) {
                         selectModel(model.id, true);
                         model.entity.setPosition(nextShot.modelTransform.position.x, nextShot.modelTransform.position.y, nextShot.modelTransform.position.z);
@@ -315,13 +330,13 @@ app.on('update', (dt) => {
                             controlRotY.value = nextShot.modelTransform.rotation.y;
                             controlRotZ.value = nextShot.modelTransform.rotation.z;
 
-                            posXVal.textContent = nextShot.modelTransform.position.x.toFixed(1);
-                            posYVal.textContent = nextShot.modelTransform.position.y.toFixed(1);
-                            posZVal.textContent = nextShot.modelTransform.position.z.toFixed(1);
-                            scaleVal.textContent = nextShot.modelTransform.scale.toFixed(2);
-                            rotXVal.textContent = Math.round(nextShot.modelTransform.rotation.x) + '°';
-                            rotYVal.textContent = Math.round(nextShot.modelTransform.rotation.y) + '°';
-                            rotZVal.textContent = Math.round(nextShot.modelTransform.rotation.z) + '°';
+                            inputPosX.value = nextShot.modelTransform.position.x.toFixed(1);
+                            inputPosY.value = nextShot.modelTransform.position.y.toFixed(1);
+                            inputPosZ.value = nextShot.modelTransform.position.z.toFixed(1);
+                            inputScale.value = nextShot.modelTransform.scale.toFixed(2);
+                            inputRotX.value = Math.round(nextShot.modelTransform.rotation.x);
+                            inputRotY.value = Math.round(nextShot.modelTransform.rotation.y);
+                            inputRotZ.value = Math.round(nextShot.modelTransform.rotation.z);
                         }
                     }
                 }
@@ -376,9 +391,13 @@ app.on('update', (dt) => {
             cameraYaw = pc.math.lerp(currentShot.yaw, targetYaw, ease);
             updateCameraRotation();
 
+            // Smoothly interpolate camera fov (zoom)
+            const currentFov = pc.math.lerp(currentShot.fov ?? 45, nextShot.fov ?? 45, ease);
+            updateZoomHUD(currentFov);
+
             // Smoothly interpolate model transform if defined on both shots
             if (currentShot.modelTransform && nextShot.modelTransform) {
-                const model = loadedModels.find(m => m.file.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
+                const model = loadedModels.find(m => m.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
                 if (model) {
                     selectModel(model.id, true);
 
@@ -424,13 +443,13 @@ app.on('update', (dt) => {
                         controlRotY.value = ry;
                         controlRotZ.value = rz;
 
-                        posXVal.textContent = currentModelPos.x.toFixed(1);
-                        posYVal.textContent = currentModelPos.y.toFixed(1);
-                        posZVal.textContent = currentModelPos.z.toFixed(1);
-                        scaleVal.textContent = currentScale.toFixed(2);
-                        rotXVal.textContent = Math.round(rx) + '°';
-                        rotYVal.textContent = Math.round(ry) + '°';
-                        rotZVal.textContent = Math.round(rz) + '°';
+                        inputPosX.value = currentModelPos.x.toFixed(1);
+                        inputPosY.value = currentModelPos.y.toFixed(1);
+                        inputPosZ.value = currentModelPos.z.toFixed(1);
+                        inputScale.value = currentScale.toFixed(2);
+                        inputRotX.value = Math.round(rx);
+                        inputRotY.value = Math.round(ry);
+                        inputRotZ.value = Math.round(rz);
                     }
                 }
             }
@@ -500,28 +519,40 @@ const controlRotY = document.getElementById('control-rot-y');
 const controlRotZ = document.getElementById('control-rot-z');
 const controlZoom = document.getElementById('control-zoom');
 
-// Value Labels
-const posXVal = document.getElementById('pos-x-val');
-const posYVal = document.getElementById('pos-y-val');
-const posZVal = document.getElementById('pos-z-val');
-const scaleVal = document.getElementById('scale-val');
-const rotXVal = document.getElementById('rot-x-val');
-const rotYVal = document.getElementById('rot-y-val');
-const rotZVal = document.getElementById('rot-z-val');
-const zoomVal = document.getElementById('zoom-val');
+// Value Inputs (bidirectional numeric entry)
+const inputPosX = document.getElementById('input-pos-x');
+const inputPosY = document.getElementById('input-pos-y');
+const inputPosZ = document.getElementById('input-pos-z');
+const inputScale = document.getElementById('input-scale');
+const inputRotX = document.getElementById('input-rot-x');
+const inputRotY = document.getElementById('input-rot-y');
+const inputRotZ = document.getElementById('input-rot-z');
+const inputZoom = document.getElementById('input-zoom');
 
 if (controlZoom) {
     controlZoom.addEventListener('input', () => {
         const fov = parseFloat(controlZoom.value);
         camera.camera.fov = fov;
-        zoomVal.textContent = `${Math.round(fov)}°`;
+        if (inputZoom) {
+            inputZoom.value = Math.round(fov);
+        }
+    });
+}
+
+if (inputZoom) {
+    inputZoom.addEventListener('input', () => {
+        const fov = Math.min(110, Math.max(10, parseFloat(inputZoom.value) || 45));
+        controlZoom.value = fov;
+        camera.camera.fov = fov;
     });
 }
 
 function updateZoomHUD(fov) {
-    if (controlZoom && zoomVal) {
+    if (controlZoom) {
         controlZoom.value = fov;
-        zoomVal.textContent = `${Math.round(fov)}°`;
+    }
+    if (inputZoom) {
+        inputZoom.value = Math.round(fov);
     }
     camera.camera.fov = fov;
 }
@@ -723,14 +754,14 @@ function selectModel(modelId, suppressCameraLookAt = false) {
         controlRotY.value = rot.y;
         controlRotZ.value = rot.z;
 
-        // Update labels
-        posXVal.textContent = pos.x.toFixed(1);
-        posYVal.textContent = pos.y.toFixed(1);
-        posZVal.textContent = pos.z.toFixed(1);
-        scaleVal.textContent = scale.toFixed(2);
-        rotXVal.textContent = Math.round(rot.x) + '°';
-        rotYVal.textContent = Math.round(rot.y) + '°';
-        rotZVal.textContent = Math.round(rot.z) + '°';
+        // Update value inputs
+        inputPosX.value = pos.x.toFixed(1);
+        inputPosY.value = pos.y.toFixed(1);
+        inputPosZ.value = pos.z.toFixed(1);
+        inputScale.value = scale.toFixed(2);
+        inputRotX.value = Math.round(rot.x);
+        inputRotY.value = Math.round(rot.y);
+        inputRotZ.value = Math.round(rot.z);
 
         if (!suppressCameraLookAt) {
             // Rotate camera to face the selected model
@@ -824,14 +855,14 @@ function updateActiveModelTransform() {
     model.entity.setLocalScale(s, s, s);
     model.entity.setEulerAngles(rx, ry, rz);
 
-    // Update labels
-    posXVal.textContent = px.toFixed(1);
-    posYVal.textContent = py.toFixed(1);
-    posZVal.textContent = pz.toFixed(1);
-    scaleVal.textContent = s.toFixed(2);
-    rotXVal.textContent = Math.round(rx) + '°';
-    rotYVal.textContent = Math.round(ry) + '°';
-    rotZVal.textContent = Math.round(rz) + '°';
+    // Update value inputs
+    inputPosX.value = px.toFixed(1);
+    inputPosY.value = py.toFixed(1);
+    inputPosZ.value = pz.toFixed(1);
+    inputScale.value = s.toFixed(2);
+    inputRotX.value = Math.round(rx);
+    inputRotY.value = Math.round(ry);
+    inputRotZ.value = Math.round(rz);
 
     // Rotate camera to face the selected model as we move it
     camera.lookAt(new pc.Vec3(px, py, pz));
@@ -840,6 +871,43 @@ function updateActiveModelTransform() {
     cameraPitch = euler.x;
 }
 
+// Bind numeric input events for model transform (bidirectional entry)
+function handleModelTransformInput() {
+    if (!activeModelId) return;
+    const model = loadedModels.find(m => m.id === activeModelId);
+    if (!model) return;
+
+    // Parse values, clamping Scale and modulo-ing Rotation to 360 safely
+    const px = parseFloat(inputPosX.value) || 0;
+    const py = parseFloat(inputPosY.value) || 0;
+    const pz = parseFloat(inputPosZ.value) || 0;
+    const s = Math.min(5, Math.max(0.1, parseFloat(inputScale.value) || 1.0));
+    const rx = (parseFloat(inputRotX.value) || 0) % 360;
+    const ry = (parseFloat(inputRotY.value) || 0) % 360;
+    const rz = (parseFloat(inputRotZ.value) || 0) % 360;
+
+    // Apply to sliders
+    controlPosX.value = px;
+    controlPosY.value = py;
+    controlPosZ.value = pz;
+    controlScale.value = s;
+    controlRotX.value = rx;
+    controlRotY.value = ry;
+    controlRotZ.value = rz;
+
+    // Apply to entity
+    model.entity.setPosition(px, py, pz);
+    model.entity.setLocalScale(s, s, s);
+    model.entity.setEulerAngles(rx, ry, rz);
+
+    // Rotate camera to face selected model as we type
+    camera.lookAt(new pc.Vec3(px, py, pz));
+    const euler = camera.getEulerAngles();
+    cameraYaw = euler.y;
+    cameraPitch = euler.x;
+}
+
+// Attach slider listeners
 controlPosX.addEventListener('input', updateActiveModelTransform);
 controlPosY.addEventListener('input', updateActiveModelTransform);
 controlPosZ.addEventListener('input', updateActiveModelTransform);
@@ -847,6 +915,13 @@ controlScale.addEventListener('input', updateActiveModelTransform);
 controlRotX.addEventListener('input', updateActiveModelTransform);
 controlRotY.addEventListener('input', updateActiveModelTransform);
 controlRotZ.addEventListener('input', updateActiveModelTransform);
+
+// Attach numeric input box listeners
+if (inputPosX) {
+    [inputPosX, inputPosY, inputPosZ, inputScale, inputRotX, inputRotY, inputRotZ].forEach((input) => {
+        input.addEventListener('input', handleModelTransformInput);
+    });
+}
 
 // --- Screen Recording (MediaStream Capture) ---
 const recordBtn = document.getElementById('record-btn');
@@ -942,6 +1017,7 @@ try {
             position: new pc.Vec3(s.position.x, s.position.y, s.position.z),
             pitch: s.pitch,
             yaw: s.yaw,
+            fov: s.fov ?? 45,
             stopDuration: s.stopDuration ?? 0,
             modelTransform: s.modelTransform ?? null
         }));
@@ -959,6 +1035,7 @@ function saveShotsToStorage() {
             position: { x: s.position.x, y: s.position.y, z: s.position.z },
             pitch: s.pitch,
             yaw: s.yaw,
+            fov: s.fov ?? 45,
             stopDuration: s.stopDuration ?? 0,
             modelTransform: s.modelTransform ?? null
         }));
@@ -1042,7 +1119,7 @@ function renderShotsList() {
         // Bind Button Actions
         const warpBtn = document.getElementById(`warp-shot-${shot.id}`);
         warpBtn.addEventListener('click', () => {
-            startWarpTo(shot.position, shot.pitch, shot.yaw, shot.modelTransform);
+            startWarpTo(shot.position, shot.pitch, shot.yaw, shot.modelTransform, shot.fov ?? 45);
         });
 
         const stopInput = document.getElementById(`shot-stop-${shot.id}`);
@@ -1068,11 +1145,12 @@ function renderShotsList() {
             shot.position.copy(camera.getPosition());
             shot.pitch = cameraPitch;
             shot.yaw = cameraYaw;
+            shot.fov = camera.camera.fov;
 
             const activeModel = loadedModels.find(m => m.id === activeModelId);
             shot.modelTransform = activeModel ? {
                 id: activeModelId,
-                name: activeModel.file.name,
+                name: activeModel.name,
                 position: { x: activeModel.entity.getPosition().x, y: activeModel.entity.getPosition().y, z: activeModel.entity.getPosition().z },
                 rotation: { x: activeModel.entity.getEulerAngles().x, y: activeModel.entity.getEulerAngles().y, z: activeModel.entity.getEulerAngles().z },
                 scale: activeModel.entity.getLocalScale().x
@@ -1102,7 +1180,7 @@ captureShotBtn.addEventListener('click', () => {
     const activeModel = loadedModels.find(m => m.id === activeModelId);
     const modelTransform = activeModel ? {
         id: activeModelId,
-        name: activeModel.file.name,
+        name: activeModel.name,
         position: { x: activeModel.entity.getPosition().x, y: activeModel.entity.getPosition().y, z: activeModel.entity.getPosition().z },
         rotation: { x: activeModel.entity.getEulerAngles().x, y: activeModel.entity.getEulerAngles().y, z: activeModel.entity.getEulerAngles().z },
         scale: activeModel.entity.getLocalScale().x
@@ -1114,6 +1192,7 @@ captureShotBtn.addEventListener('click', () => {
         position: position,
         pitch: cameraPitch,
         yaw: cameraYaw,
+        fov: camera.camera.fov,
         stopDuration: 0,
         modelTransform: modelTransform
     };
@@ -1123,12 +1202,14 @@ captureShotBtn.addEventListener('click', () => {
     renderShotsList();
 });
 
-function startWarpTo(position, pitch, yaw, targetModelTransform = null) {
+function startWarpTo(position, pitch, yaw, targetModelTransform = null, targetFov = 45) {
     warpStartPos.copy(camera.getPosition());
     warpEndPos.copy(position);
     warpStartPitch = cameraPitch;
     warpEndPitch = pitch;
     warpStartYaw = cameraYaw;
+    warpStartFov = camera.camera.fov;
+    warpEndFov = targetFov;
 
     // Adjust yaw difference to make sure we rotate the shortest way around the circle
     let yawDiff = yaw - cameraYaw;
@@ -1139,7 +1220,7 @@ function startWarpTo(position, pitch, yaw, targetModelTransform = null) {
     // Model warp setup
     warpModelEntity = null;
     if (targetModelTransform) {
-        const model = loadedModels.find(m => m.file.name === targetModelTransform.name) || loadedModels.find(m => m.id === targetModelTransform.id);
+        const model = loadedModels.find(m => m.name === targetModelTransform.name) || loadedModels.find(m => m.id === targetModelTransform.id);
         if (model) {
             // Activate model without resetting camera orientation
             selectModel(model.id, true);
@@ -1306,7 +1387,7 @@ function exportShotsToJSON() {
 
     // Identify active model filename
     const activeModel = loadedModels.find(m => m.id === activeModelId);
-    const modelName = activeModel ? activeModel.file.name : 'No Active Model';
+    const modelName = activeModel ? activeModel.name : 'No Active Model';
 
     const data = {
         modelName: modelName,
