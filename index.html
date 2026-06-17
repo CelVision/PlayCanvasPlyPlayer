@@ -519,6 +519,91 @@
             .hidden-input {
                 display: none;
             }
+            /* Bottom Toolbar */
+            #bottom-toolbar {
+                position: absolute;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(20, 20, 20, 0.7);
+                backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 12px;
+                padding: 10px 18px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                z-index: 10;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            }
+            .toolbar-title {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #e2e8f0;
+                margin-right: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-family: system-ui, -apple-system, sans-serif;
+            }
+            .toolbar-item {
+                width: 52px;
+                height: 52px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px dashed rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                cursor: grab;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                user-select: none;
+            }
+            .toolbar-item:hover {
+                background: rgba(255, 255, 255, 0.08);
+                border-color: #ef4444;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+            }
+            .toolbar-item:active {
+                cursor: grabbing;
+                transform: scale(0.95);
+            }
+            .toolbar-item-icon {
+                width: 18px;
+                height: 24px;
+                background: #ef4444;
+                border-radius: 3px;
+                position: relative;
+                margin-bottom: 3px;
+                box-shadow: 0 3px 6px rgba(239, 68, 68, 0.3);
+            }
+            .toolbar-item-icon::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: #f87171;
+                border-radius: 50%;
+            }
+            .toolbar-item-icon::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: #991b1b;
+                border-radius: 50%;
+            }
+            .toolbar-item-label {
+                font-size: 0.6rem;
+                font-weight: 500;
+                color: #9ca3af;
+                font-family: system-ui, -apple-system, sans-serif;
+            }
         </style>
     </head>
     <body>
@@ -674,7 +759,15 @@
             <div>• Q / E: Move target down / up</div>
         </div>
 
-        <canvas id='application'></canvas>
+        <div id="bottom-toolbar">
+            <span class="toolbar-title">Templates</span>
+            <div class="toolbar-item" id="template-cylinder" draggable="true" title="Drag and drop me into the scene!">
+                <div class="toolbar-item-icon"></div>
+                <div class="toolbar-item-label">Cylinder</div>
+            </div>
+        </div>
+
+        <canvas id="application"></canvas>
         <script type="module" src="main.js"></script>
     </body>
 </html>

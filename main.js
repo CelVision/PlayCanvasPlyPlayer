@@ -1,8 +1,49 @@
+window.addEventListener('error', (e) => {
+    console.error('Captured global error:', e.error);
+    const errDiv = document.createElement('div');
+    errDiv.style.position = 'absolute';
+    errDiv.style.top = '10px';
+    errDiv.style.left = '50%';
+    errDiv.style.transform = 'translateX(-50%)';
+    errDiv.style.background = 'rgba(239, 68, 68, 0.95)';
+    errDiv.style.color = '#fff';
+    errDiv.style.padding = '10px 20px';
+    errDiv.style.borderRadius = '8px';
+    errDiv.style.zIndex = '999999';
+    errDiv.style.fontSize = '14px';
+    errDiv.style.fontFamily = 'monospace';
+    errDiv.style.pointerEvents = 'none';
+    errDiv.textContent = `Error: ${e.message} at ${e.filename}:${e.lineno}`;
+    document.body.appendChild(errDiv);
+    setTimeout(() => errDiv.remove(), 8000);
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+    console.error('Captured global unhandled rejection:', e.reason);
+    const errDiv = document.createElement('div');
+    errDiv.style.position = 'absolute';
+    errDiv.style.top = '10px';
+    errDiv.style.left = '50%';
+    errDiv.style.transform = 'translateX(-50%)';
+    errDiv.style.background = 'rgba(239, 68, 68, 0.95)';
+    errDiv.style.color = '#fff';
+    errDiv.style.padding = '10px 20px';
+    errDiv.style.borderRadius = '8px';
+    errDiv.style.zIndex = '999999';
+    errDiv.style.fontSize = '14px';
+    errDiv.style.fontFamily = 'monospace';
+    errDiv.style.pointerEvents = 'none';
+    errDiv.textContent = `Unhandled Rejection: ${e.reason}`;
+    document.body.appendChild(errDiv);
+    setTimeout(() => errDiv.remove(), 8000);
+});
+
 import * as pc from 'playcanvas';
 
 // --- Application Setup ---
 const canvas = document.getElementById('application');
 const app = new pc.Application(canvas);
+app.graphicsDevice.maxPixelRatio = window.devicePixelRatio;
 app.setCanvasResolution(pc.RESOLUTION_AUTO);
 app.setCanvasFillMode(pc.FILLMODE_FILL_WINDOW);
 app.start();
@@ -54,7 +95,7 @@ let currentWaitDuration = 0;
 const segmentDuration = 2.5; // 2.5 seconds per waypoint segment
 
 // Set initial camera position
-camera.setPosition(0, 1.5, 5);
+camera.setPosition(0, 0, 0);
 camera.setEulerAngles(cameraPitch, cameraYaw, 0);
 
 // Function to update camera rotation based on free-look state
@@ -314,7 +355,7 @@ app.on('update', (dt) => {
                 updateZoomHUD(nextShot.fov ?? 45);
 
                 if (nextShot.modelTransform) {
-                    const model = loadedModels.find(m => m.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
+                    const model = loadedModels.find(m => m.name === nextShot.modelTransform.name && m.type !== 'primitive') || loadedModels.find(m => m.id === nextShot.modelTransform.id && m.type !== 'primitive');
                     if (model) {
                         selectModel(model.id, true);
                         model.entity.setPosition(nextShot.modelTransform.position.x, nextShot.modelTransform.position.y, nextShot.modelTransform.position.z);
@@ -397,7 +438,7 @@ app.on('update', (dt) => {
 
             // Smoothly interpolate model transform if defined on both shots
             if (currentShot.modelTransform && nextShot.modelTransform) {
-                const model = loadedModels.find(m => m.name === nextShot.modelTransform.name) || loadedModels.find(m => m.id === nextShot.modelTransform.id);
+                const model = loadedModels.find(m => m.name === nextShot.modelTransform.name && m.type !== 'primitive') || loadedModels.find(m => m.id === nextShot.modelTransform.id && m.type !== 'primitive');
                 if (model) {
                     selectModel(model.id, true);
 
@@ -586,7 +627,7 @@ fileInput.addEventListener('change', (e) => {
 });
 
 function loadPlyFile(file) {
-    const modelId = 'model-' + Math.random().toString(36).substring(2, 9);
+    const modelId = `model-${Math.random().toString(36).substring(2, 9)}`;
     
     // Create Blob URL for local file loading
     const blobUrl = URL.createObjectURL(file);
@@ -594,6 +635,31 @@ function loadPlyFile(file) {
     // Create a new PlayCanvas asset of type 'gsplat' (Gaussian Splatting)
     const asset = new pc.Asset(file.name, 'gsplat', {
         url: blobUrl
+    });
+
+    let pivotOffset = null;
+
+    // Shift splat points physically on the CPU relative to their center before GPU upload.
+    // This maintains 100% pristine GPU floating-point precision (no blurriness) and allows
+    // the model and camera to genuinely live at the origin (0, 0, 0)!
+    asset.on('load:data', (data) => {
+        const x = data.getProp('x');
+        const y = data.getProp('y');
+        const z = data.getProp('z');
+        if (!x || !y || !z) return;
+
+        const aabb = new pc.BoundingBox();
+        data.calcAabb(aabb);
+        const center = aabb.center.clone();
+
+        for (let i = 0; i < data.numSplats; i++) {
+            x[i] -= center.x;
+            y[i] -= center.y;
+            z[i] -= center.z;
+        }
+
+        pivotOffset = center;
+        console.log('--- Physically shifted CPU splat positions by:', center.x, center.y, center.z, '---');
     });
 
     // Add asset to project registry
@@ -633,8 +699,14 @@ function loadPlyFile(file) {
             name: file.name,
             entity: entity,
             asset: loadedAsset,
-            visible: true
+            visible: true,
+            pivotOffset: pivotOffset // Use the pre-calculated raw center
         };
+
+        // Try resolving the bounding box synchronously first (is almost always ready immediately)
+        const syncResource = loadedAsset?.resource ?? entity.gsplat?.resource;
+        const syncAabb = syncResource?.aabb ?? entity.gsplat?.customAabb;
+
         loadedModels.push(modelData);
 
         // Update loading UI item with full controls
@@ -645,20 +717,59 @@ function loadPlyFile(file) {
         selectModel(modelId);
 
         // Position camera to look at the newly added model
-        // Try to automatically guess a good distance based on splat bounding box (if present)
-        setTimeout(() => {
-            if (entity.gsplat && entity.gsplat.instance) {
-                const aabb = entity.gsplat.instance.aabb;
-                if (aabb) {
+        if (modelData.pivotOffset && syncAabb) {
+            // Position camera synchronously on the first frame
+            const dist = Math.max(syncAabb.halfExtents.length() * 2.5, 3);
+            
+            // Keep the entity position at (0, 0, 0) to preserve pristine GPU float precision in the workbuffer!
+            entity.setPosition(0, 0, 0);
+            
+            // Position the camera relative to the raw, uncentered model bounds
+            camera.setPosition(syncAabb.center.x, syncAabb.center.y, syncAabb.center.z + dist);
+            camera.lookAt(syncAabb.center);
+            
+            const euler = camera.getEulerAngles();
+            cameraYaw = euler.y;
+            cameraPitch = euler.x;
+            
+            updateCameraStats();
+            updateStats();
+        } else {
+            // Fallback: poll asynchronously if the bounds are not ready synchronously
+            let pollCount = 0;
+            const pollInterval = setInterval(() => {
+                pollCount++;
+                const resource = loadedAsset?.resource ?? entity.gsplat?.resource;
+                const aabb = resource?.aabb ?? entity.gsplat?.customAabb;
+                
+                // Check if we have a valid, non-zero bounding box
+                if (aabb && (aabb.halfExtents.x > 0 || aabb.halfExtents.y > 0 || aabb.halfExtents.z > 0)) {
+                    clearInterval(pollInterval);
+                    
                     const dist = Math.max(aabb.halfExtents.length() * 2.5, 3);
+                    
+                    // Keep the pivotOffset from the loader
+                    modelData.pivotOffset = pivotOffset;
+                    
+                    // Keep the entity position at (0, 0, 0) to preserve pristine GPU float precision in the workbuffer!
+                    entity.setPosition(0, 0, 0);
+                    
+                    // Position the camera relative to the raw, uncentered model bounds
                     camera.setPosition(aabb.center.x, aabb.center.y, aabb.center.z + dist);
                     camera.lookAt(aabb.center);
+                    
                     const euler = camera.getEulerAngles();
                     cameraYaw = euler.y;
                     cameraPitch = euler.x;
+                    
+                    updateCameraStats();
+                    updateStats();
+                } else if (pollCount > 50) { // Stop polling after 5 seconds
+                    clearInterval(pollInterval);
+                    console.warn('GSplat bounding box polling timed out.');
                 }
-            }
-        }, 100);
+            }, 100);
+        }
     });
 
     asset.once('error', (err) => {
@@ -769,11 +880,14 @@ function selectModel(modelId, suppressCameraLookAt = false) {
         inputRotZ.value = Math.round(rot.z);
 
         if (!suppressCameraLookAt) {
-            // Rotate camera to face the selected model
-            camera.lookAt(pos);
-            const euler = camera.getEulerAngles();
-            cameraYaw = euler.y;
-            cameraPitch = euler.x;
+            // Rotate camera to face the selected model (only if camera is not at the exact same position)
+            const camPos = camera.getPosition();
+            if (camPos.distance(pos) > 0.01) {
+                camera.lookAt(pos);
+                const euler = camera.getEulerAngles();
+                cameraYaw = euler.y;
+                cameraPitch = euler.x;
+            }
         }
     }
 }
@@ -803,11 +917,13 @@ function deleteModel(modelId) {
         
         // Remove from hierarchy and clean up resources
         model.entity.destroy();
-        app.assets.remove(model.asset);
         
-        // Revoke Blob URL to free memory
-        if (model.asset.file && model.asset.file.url) {
-            URL.revokeObjectURL(model.asset.file.url);
+        if (model.asset) {
+            app.assets.remove(model.asset);
+            // Revoke Blob URL to free memory
+            if (model.asset.file && model.asset.file.url) {
+                URL.revokeObjectURL(model.asset.file.url);
+            }
         }
 
         loadedModels.splice(index, 1);
@@ -823,7 +939,7 @@ function deleteModel(modelId) {
             modelsContainer.innerHTML = '<div class="empty-list-text">No models loaded yet. Upload some above!</div>';
             activeControls.style.display = 'none';
             activeModelId = null;
-            camera.setPosition(0, 1.5, 5);
+            camera.setPosition(0, 0, 0);
             cameraYaw = 0;
             cameraPitch = 0;
             updateCameraRotation();
@@ -929,6 +1045,119 @@ if (inputPosX) {
     });
 }
 
+// --- Drag and Drop Primitive Template Creator ---
+const templateCylinder = document.getElementById('template-cylinder');
+
+if (templateCylinder) {
+    templateCylinder.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', 'cylinder');
+    });
+}
+
+canvas.addEventListener('dragover', (e) => {
+    e.preventDefault(); // Required to allow drop event
+    e.dataTransfer.dropEffect = 'copy';
+});
+
+canvas.addEventListener('drop', (e) => {
+    e.preventDefault();
+    
+    // Check if files were dropped (for drag-and-drop file upload)
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const files = e.dataTransfer.files;
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            if (file.name.toLowerCase().endsWith('.ply')) {
+                loadPlyFile(file);
+            }
+        }
+        return;
+    }
+
+    const templateType = e.dataTransfer.getData('text/plain');
+    if (templateType === 'cylinder') {
+        const rect = canvas.getBoundingClientRect();
+        const screenX = e.clientX - rect.left;
+        const screenY = e.clientY - rect.top;
+
+        const dropPos = getRaycastDropPosition(screenX, screenY);
+        createCylinderInScene(dropPos);
+    }
+});
+
+function getRaycastDropPosition(screenX, screenY) {
+    const nearPoint = new pc.Vec3();
+    const farPoint = new pc.Vec3();
+
+    camera.camera.screenToWorld(screenX, screenY, camera.camera.nearClip, nearPoint);
+    camera.camera.screenToWorld(screenX, screenY, camera.camera.nearClip + 10.0, farPoint);
+
+    const rayDir = new pc.Vec3().sub2(farPoint, nearPoint).normalize();
+    const rayStart = camera.getPosition();
+
+    // Intersect ray with horizontal plane y = 0
+    const targetY = 0;
+    if (Math.abs(rayDir.y) > 0.0001) {
+        const t = (targetY - rayStart.y) / rayDir.y;
+        if (t > 0 && t < 100) {
+            return new pc.Vec3().copy(rayDir).scale(t).add(rayStart);
+        }
+    }
+
+    // Default fallback: place 5 units in front of the camera
+    const forward = camera.forward;
+    return new pc.Vec3().copy(forward).scale(5.0).add(rayStart);
+}
+
+function createCylinderInScene(pos) {
+    const modelId = `cyl-${Date.now()}`;
+
+    // Create standard PlayCanvas Entity
+    const entity = new pc.Entity(modelId);
+    entity.addComponent('render', {
+        type: 'cylinder'
+    });
+
+    // Create solid red opaque material
+    const material = new pc.StandardMaterial();
+    material.diffuse = new pc.Color(1, 0, 0); // Red
+    material.emissive = new pc.Color(1, 0, 0); // Emissive Red (so it stays red without light)
+    material.useLighting = false; // Disable lighting so it shows full red color
+    material.update();
+    entity.render.material = material;
+
+    entity.setPosition(pos);
+    entity.setLocalScale(0.5, 1.0, 0.5);
+
+    app.root.addChild(entity);
+
+    // Append to "Loaded Models" container on sidebar
+    const modelItem = document.createElement('div');
+    modelItem.className = 'model-item';
+    modelItem.id = `item-${modelId}`;
+
+    // Remove empty placeholder if still present
+    const emptyText = modelsContainer.querySelector('.empty-list-text');
+    if (emptyText) {
+        emptyText.remove();
+    }
+
+    modelsContainer.appendChild(modelItem);
+
+    const modelData = {
+        id: modelId,
+        name: 'Red Cylinder',
+        entity: entity,
+        asset: null,
+        visible: true,
+        type: 'primitive'
+    };
+    loadedModels.push(modelData);
+
+    updateModelUIItem(modelData);
+    updateStats();
+}
+
 // --- Screen Recording (MediaStream Capture) ---
 const recordBtn = document.getElementById('record-btn');
 const recordBtnText = document.getElementById('record-btn-text');
@@ -1017,16 +1246,31 @@ try {
     if (savedShots) {
         // Parse and reconstruct pc.Vec3 objects
         const parsed = JSON.parse(savedShots);
-        cameraShots = parsed.map(s => ({
-            id: s.id,
-            name: s.name,
-            position: new pc.Vec3(s.position.x, s.position.y, s.position.z),
-            pitch: s.pitch,
-            yaw: s.yaw,
-            fov: s.fov ?? 45,
-            stopDuration: s.stopDuration ?? 0,
-            modelTransform: s.modelTransform ?? null
-        }));
+        cameraShots = parsed.map((s) => {
+            const px = Number(s.position?.x);
+            const py = Number(s.position?.y);
+            const pz = Number(s.position?.z);
+            const pitch = Number(s.pitch);
+            const yaw = Number(s.yaw);
+
+            // Skip corrupted shots (e.g. NaN or extremely large values from previous degenerate matrix states)
+            if (isNaN(px) || isNaN(py) || isNaN(pz) || isNaN(pitch) || isNaN(yaw) ||
+                Math.abs(px) > 1e6 || Math.abs(py) > 1e6 || Math.abs(pz) > 1e6 ||
+                Math.abs(pitch) > 1e6 || Math.abs(yaw) > 1e6) {
+                return null;
+            }
+
+            return {
+                id: s.id,
+                name: s.name,
+                position: new pc.Vec3(px, py, pz),
+                pitch: pitch,
+                yaw: yaw,
+                fov: s.fov ?? 45,
+                stopDuration: s.stopDuration ?? 0,
+                modelTransform: s.modelTransform ?? null
+            };
+        }).filter(s => s !== null);
     }
 } catch (e) {
     console.error('Failed to load saved camera shots:', e);
@@ -1153,7 +1397,7 @@ function renderShotsList() {
             shot.yaw = cameraYaw;
             shot.fov = camera.camera.fov;
 
-            const activeModel = loadedModels.find(m => m.id === activeModelId);
+            const activeModel = loadedModels.find(m => m.id === activeModelId && m.type !== 'primitive');
             shot.modelTransform = activeModel ? {
                 id: activeModelId,
                 name: activeModel.name,
@@ -1183,7 +1427,7 @@ captureShotBtn.addEventListener('click', () => {
     const position = new pc.Vec3();
     position.copy(camera.getPosition());
 
-    const activeModel = loadedModels.find(m => m.id === activeModelId);
+    const activeModel = loadedModels.find(m => m.id === activeModelId && m.type !== 'primitive');
     const modelTransform = activeModel ? {
         id: activeModelId,
         name: activeModel.name,
@@ -1226,7 +1470,7 @@ function startWarpTo(position, pitch, yaw, targetModelTransform = null, targetFo
     // Model warp setup
     warpModelEntity = null;
     if (targetModelTransform) {
-        const model = loadedModels.find(m => m.name === targetModelTransform.name) || loadedModels.find(m => m.id === targetModelTransform.id);
+        const model = loadedModels.find(m => m.name === targetModelTransform.name && m.type !== 'primitive') || loadedModels.find(m => m.id === targetModelTransform.id && m.type !== 'primitive');
         if (model) {
             // Activate model without resetting camera orientation
             selectModel(model.id, true);
